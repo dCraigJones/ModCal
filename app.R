@@ -1,6 +1,8 @@
+.libPaths("G:/Delivery/Shared/ACAD/JonesDC/_Support/RWD")
+
 library(shiny)
 library(shinythemes)
-library(plotly)
+library(DT)
 
 source("./R/utils.R")
 
@@ -20,14 +22,14 @@ source("./R/utils.R")
 # ..b = button
 # ..p = plot
 
-ui <- navbarPage("ModCal v0.1"
+ui <- navbarPage("ModCal v0.1", id="main"
                  , theme = shinytheme("cosmo")
                  
-                 , tabPanel("Overview"
+                 , tabPanel("Overview", value="tab_overview"
                     , DTOutput("omt_overview")  
                  )   
                  
-                 , tabPanel("Individual"
+                 , tabPanel("Individual", value="tab_indiv"
                             
                             # Sidebar with a slider input for number of bins 
                             , sidebarLayout(
@@ -37,12 +39,14 @@ ui <- navbarPage("ModCal v0.1"
                                 #, selectInput("iss_basin", "Selection Basin: ", c("All"))
                                 , selectizeInput("iss_pumpstation", "Pumpstation", sw$address[order(sw$address)])
                                 , hr()
+                                #, checkboxInput("isc_investigate", "Investigate", FALSE)
+                                , selectInput("iss_comment", "Comment: ", comment_options)
                                 , checkboxInput("isc_approved", "Approve", FALSE)
-                                , checkboxInput("isc_investigate", "Investigate", FALSE)
                                 , hr()
                                 , radioButtons("isr_view", "Filter", filter_options)
                                 #, textInput("ist_comment", "Comment")
                                 #, submitButton("Submit")
+                                , textOutput("qa")
                               ) # sidebarPanel
                               
                               , mainPanel(
@@ -96,17 +100,20 @@ server <- function(input, output) {
   
   output$imp_source <- renderPlot({
     hrt %>% 
-      filter(cmms==sw$cmms[index()]) %>% 
+      dplyr::filter(cmms==sw$cmms[index()]) %>% 
       ggplot(aes(x=datetime, y=runtime)) + 
       geom_line()
     
     
   }) # output$imp_source
   
-  output$omt_overview <- renderDT({
-    error
-  })
+  output$omt_overview <- renderDT({error})#, selection = "single"})
   
+  observeEvent(input$iss_comment, {
+     StrVal <- renderText(input$iss_comment)
+     output$qa <- StrVal#renderText(input$iss_comment)
+     #sw$comment[index()] <- renderText(input$iss_comment)
+ })
 }
 
 # Run the application 

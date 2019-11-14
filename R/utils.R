@@ -1,4 +1,4 @@
-#.libPaths("G:/Delivery/Shared/ACAD/JonesDC/_Support/RWD")
+.libPaths("G:/Delivery/Shared/ACAD/JonesDC/_Support/RWD")
 
 library(tidyverse); theme_set(theme_bw())
 library(WWSP)
@@ -6,7 +6,10 @@ library(lubridate)
 library(tidyr)
 
 data("hrt")
+load("./data/sw.RData")
+load("./data/results.RData")
 
+if(exists("results")) {tmp <- results}
 
 # Load from model ---------------------------------------------------------
 
@@ -19,9 +22,9 @@ load_icm <- function(filename) {
   
   
   tidy <- data %>% 
-    gather("time", "rt", -cmms) %>%
-    mutate(hour=as.numeric(time)) %>%
-    group_by(cmms, hour) %>%
+    tidyr::gather("time", "rt", -cmms) %>%
+    dplyr::mutate(hour=as.numeric(time)) %>%
+    dplyr::group_by(cmms, hour) %>%
     dplyr::summarize(hrt=sum(rt))
   
   # tidy %>% 
@@ -30,7 +33,7 @@ load_icm <- function(filename) {
   #   geom_line(lwd=1)
   
   tmp <- tidy %>% 
-    spread("cmms", "hrt")
+    tidyr::spread("cmms", "hrt")
   
   clean_tmp <- matrix(rep(NA,nrow(tmp)*ncol(tmp)), nrow=nrow(tmp))
   clean_tmp <- as.data.frame(clean_tmp)
@@ -44,7 +47,7 @@ load_icm <- function(filename) {
   colnames(clean_tmp) <- colnames(tmp)
   
   use <- clean_tmp %>% 
-    gather("cmms", "hrt", -hour)
+    tidyr::gather("cmms", "hrt", -hour)
   
   # use %>%
   #   filter(cmms==unique(tidy$cmms)[9]) %>%
@@ -56,31 +59,46 @@ load_icm <- function(filename) {
   return(use)
 }
 
-use <- load_icm("./dev/model.csv")
-
-tmp <- hrt %>% 
-  filter(wday(datetime) %in% 2:6) %>%
-  mutate(hour=hour(datetime)) %>% 
-  group_by(cmms, hour) %>% 
-  dplyr::summarize(mu=mean(runtime), sig=sd(runtime), q1=quantile(runtime, probs=0.25), q3=quantile(runtime, probs=0.75)) %>%
-  dplyr::inner_join(use, by=c("cmms", "hour")) %>%
-  mutate(z=(hrt-mu)/sig) %>%
-  group_by(cmms, hour)
+if(!exists("tmp")) {
+  tmp <- hrt %>% 
+    dplyr::filter(lubridate::wday(datetime) %in% 2:6) %>%
+    dplyr::mutate(hour=hour(datetime)) %>% 
+    dplyr::group_by(cmms, hour) %>% 
+    dplyr::summarize(mu=mean(runtime), sig=sd(runtime), q1=quantile(runtime, probs=0.25), q3=quantile(runtime, probs=0.75)) %>%
+    dplyr::inner_join(use, by=c("cmms", "hour")) %>%
+    dplyr::mutate(z=(hrt-mu)/sig) %>%
+    dplyr::group_by(cmms, hour)
+}
 
 pumpstation_names <- hrt %>%
-  group_by(grid, cmms, address, tag) %>%
-  select(cmms, address,tag) %>%
-  distinct()
+  dplyr::group_by(grid, cmms, address, tag) %>%
+  dplyr::select(cmms, address,tag) %>%
+  dplyr::distinct()
 
 
-sw <- pumpstation_names %>% 
-  inner_join(use, by="cmms") %>% 
-  select(cmms, address, tag) %>% 
-  distinct()
+if(!exists("sw")) {
+  use <- load_icm("./dev/model.csv")
+  
+  sw <- pumpstation_names %>% 
+    dplyr::inner_join(use, by="cmms") %>% 
+    dplyr::select(cmms, address, tag) %>% 
+    dplyr::distinct() %>%
+    dplyr::mutate(approved="-", comment="-")
+}
 
 
 #calibration_events <- use %>% select(model_run) %>% distinct() %>% unname()
 calibration_events <- c("2019-11-12 16:40")
+
+comment_options <- c(
+    "-"
+  , "New Development"
+  , "Investigate - Pump"
+  , "Investigate - Basin Flow"
+  , "Investigate - As-Builts"
+  , "Investigate - Valve Position"
+  , "Field Verification Needed"
+)
 
 filter_options <- c(
     "All"
@@ -96,12 +114,42 @@ wastewater_plants <- c(
 )
 
 error <- tmp %>% 
-  group_by(cmms) %>% 
-  summarize(avg=mean(z), sd=sd(z)) %>% 
-  arrange(desc(avg))
+  dplyr::group_by(cmms) %>% 
+  dplyr::summarize(avg=mean(z), sd=sd(z)) %>% 
+  dplyr::arrange(desc(avg))
 
 error <- hrt %>%
-  group_by(grid, cmms, address, tag) %>%
-  select(cmms, address,tag) %>%
-  distinct() %>%
-  right_join(error, by="cmms")
+  dplyr::group_by(grid, cmms, address) %>%
+  dplyr::summarize(RT=mean(runtime)) %>%
+  dplyr::select(cmms, address, RT) %>%
+  dplyr::distinct() %>%
+  dplyr::right_join(error, by="cmms")
+
+error$RT <- round(error$RT, 2)
+error$avg <- round(error$avg, 2)
+error$sd <- round(error$sd, 2)
+
+
+# tmp %>%
+#   dplyr::group_by(cmms, hour) %>%
+#   dplyr::summarize(
+#     e = (mu - hrt),
+#     se = e ^ 2,
+#     mu = mu,
+#     avg = mean(mu),
+#     btm = (mu - avg)
+#   ) %>%
+#   dplyr::group_by(cmms) %>%
+#   dplyr::summarize(mse = mean(se),
+#                    sd = sum(btm),
+#                    nse = (1 - mse / (sd ^ 2)))
+# 
+# tmp %>%
+#   filter(cmms == "LS-004034") %>%
+#   ggplot(aes(x = hrt, ymin = q1, ymax = q3)) +
+#   geom_linerange() +
+#   ylim(c(0, 60)) +
+#   xlim(c(0, 60)) +
+#   geom_abline(slope = 1)
+
+                   
