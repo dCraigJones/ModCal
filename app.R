@@ -1,5 +1,6 @@
 library(shiny)
 library(shinythemes)
+library(plotly)
 
 source("./R/utils.R")
 
@@ -22,7 +23,9 @@ source("./R/utils.R")
 ui <- navbarPage("ModCal v0.1"
                  , theme = shinytheme("cosmo")
                  
-                 , tabPanel("Overview")   
+                 , tabPanel("Overview"
+                    , DTOutput("omt_overview")  
+                 )   
                  
                  , tabPanel("Individual"
                             
@@ -31,8 +34,8 @@ ui <- navbarPage("ModCal v0.1"
                               sidebarPanel(
                                   selectInput("iss_calibration_run", "Calibration Run: ", calibration_events)
                                 , hr()
-                                , selectInput("iss_basin", "Selection Basin: ", c("All"))
-                                , selectizeInput("iss_pumpstation", "Pumpstation", c("a", "b", "c"))
+                                #, selectInput("iss_basin", "Selection Basin: ", c("All"))
+                                , selectizeInput("iss_pumpstation", "Pumpstation", sw$address[order(sw$address)])
                                 , hr()
                                 , checkboxInput("isc_approved", "Approve", FALSE)
                                 , checkboxInput("isc_investigate", "Investigate", FALSE)
@@ -45,8 +48,8 @@ ui <- navbarPage("ModCal v0.1"
                               , mainPanel(
                                 tabsetPanel(
                                   tabPanel("Timeseries", plotOutput("imp_timeseries"))
-                                  , tabPanel("Control")
-                                  , tabPanel("Source")
+                                  , tabPanel("Control", plotOutput("imp_control"))
+                                  , tabPanel("Source", plotOutput("imp_source"))
                                 ) # tabsetPanel
                                 
                               ) # mainPanel
@@ -64,9 +67,45 @@ ui <- navbarPage("ModCal v0.1"
 
 
 server <- function(input, output) { 
+  
+  index <- reactive(match(input$iss_pumpstation, sw$address))
+  
   output$imp_timeseries <- renderPlot({
-    plot(1,1,type="n")
+    tmp %>% 
+      dplyr::filter(cmms==sw$cmms[index()]) %>%
+      ggplot(aes(x=hour, y=mu)) + 
+      geom_line(col="grey50") + 
+      geom_errorbar(aes(ymin=q1, ymax=q3), col="grey50") +
+      geom_line(aes(y=hrt), lwd=1) +
+      geom_point(aes(y=hrt), size=3) 
   }) # output$imp_timeseries
+  
+  output$imp_control <- renderPlot({
+    tmp %>% 
+      dplyr::filter(cmms==sw$cmms[index()]) %>%
+      ggplot(aes(x=hour, y=z)) +
+      geom_line(lwd=1) + 
+      geom_point(size=3) + 
+      geom_hline(yintercept=c(0), col=rgb(0,0,1,0.5), lwd=1) +
+      #geom_hline(yintercept=-3:5, col=rgb(1,0,0,0.25), lwd=0.5) +
+      geom_hline(yintercept=c(-1,1), col=rgb(1,0,0,0.25), lwd=0.5) +
+      geom_hline(yintercept=c(-1.96,1.96), col=rgb(1,0,0,0.5), lwd=0.5) +
+      geom_hline(yintercept=c(-2.54,2.54), col=rgb(1,0,0,1), lty=2) +
+      ylab("z")
+  }) # output$imp_control
+  
+  output$imp_source <- renderPlot({
+    hrt %>% 
+      filter(cmms==sw$cmms[index()]) %>% 
+      ggplot(aes(x=datetime, y=runtime)) + 
+      geom_line()
+    
+    
+  }) # output$imp_source
+  
+  output$omt_overview <- renderDT({
+    error
+  })
   
 }
 
