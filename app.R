@@ -1,6 +1,8 @@
 library(shiny)
 library(shinythemes)
 
+source("./R/utils.R")
+
 ### GUI Naming Scheme
 #
 # i.. = Indivdual
@@ -27,13 +29,17 @@ ui <- navbarPage("ModCal v0.1"
                             # Sidebar with a slider input for number of bins 
                             , sidebarLayout(
                               sidebarPanel(
-                                selectInput("iss_calibration_run", "Calibration Run: ", c("a","b","c"))
+                                  selectInput("iss_calibration_run", "Calibration Run: ", calibration_events)
+                                , hr()
                                 , selectInput("iss_basin", "Selection Basin: ", c("All"))
-                                , selectizeInput("iss_pumpstation", "Pumpstation", c("a","b","c"))
-                                , checkboxInput("isc_approved", "Approved?", FALSE)
-                                , radioButtons("isr_view", "Filter", c("a", "b", "C"))
-                                , textInput("ist_comment", "Comment")
-                                , submitButton("Submit")
+                                , selectizeInput("iss_pumpstation", "Pumpstation", c("a", "b", "c"))
+                                , hr()
+                                , checkboxInput("isc_approved", "Approve", FALSE)
+                                , checkboxInput("isc_investigate", "Investigate", FALSE)
+                                , hr()
+                                , radioButtons("isr_view", "Filter", filter_options)
+                                #, textInput("ist_comment", "Comment")
+                                #, submitButton("Submit")
                               ) # sidebarPanel
                               
                               , mainPanel(
@@ -53,6 +59,7 @@ ui <- navbarPage("ModCal v0.1"
                               , tabPanel("Buckman")
                               , tabPanel("Cedar Bay")
                  ) # navbarMenu
+                 
 ) # navbarPage
 
 
