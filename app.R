@@ -79,6 +79,7 @@ server <- function(input, output, session) {
   observeEvent( approval() , {
     
     sw_tmp$approved[ index() ] <<- approval()
+    save(sw_tmp, file="./data/sw_tmp.RData")
     
   })
   
@@ -95,6 +96,18 @@ server <- function(input, output, session) {
     
     updateSelectInput( session, "iss_comment", selected=sw_tmp$comment[ index() ] )
     updateCheckboxInput( session, "isc_approved", value=sw_tmp$approved[ index() ])
+    
+  })
+  
+  selected <- reactive({ input$omt_overview_rows_selected })
+  
+  observeEvent( selected(), {
+    
+    rowVal <- selected()
+    rowValLast <- rowVal[length(rowVal)]
+    
+    updateTabsetPanel( session, "main", "tab_indiv" )
+    updateSelectizeInput( session, "iss_pumpstation", selected=error$address[ rowValLast ] )
     
   })
   
@@ -131,7 +144,7 @@ server <- function(input, output, session) {
     
   }) # output$imp_source
   
-  output$omt_overview <- renderDT({error})#, selection = "single"})
+  output$omt_overview <- renderDT({ error })
   
 
   
