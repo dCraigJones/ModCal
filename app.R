@@ -1,4 +1,4 @@
-.libPaths("G:/Delivery/Shared/ACAD/JonesDC/_Support/RWD")
+#.libPaths("G:/Delivery/Shared/ACAD/JonesDC/_Support/RWD")
 
 library(shiny)
 library(shinythemes)
@@ -70,9 +70,33 @@ ui <- navbarPage("ModCal v0.1", id="main"
 ) # navbarPage
 
 
-server <- function(input, output) { 
+server <- function(input, output, session) { 
   
-  index <- reactive(match(input$iss_pumpstation, sw$address))
+  index <- reactive( match( input$iss_pumpstation, sw$address ) )
+  
+  approval <- reactive({ input$isc_approved })
+  
+  observeEvent( approval() , {
+    
+    sw_tmp$approved[ index() ] <<- approval()
+    
+  })
+  
+  comment <- reactive({ input$iss_comment })
+  
+  observeEvent( comment(), {
+    
+    sw_tmp$comment[ index() ] <<- comment()
+    save(sw_tmp, file="./data/sw_tmp.RData")
+    
+  })
+  
+  observeEvent( index(), {
+    
+    updateSelectInput( session, "iss_comment", selected=sw_tmp$comment[ index() ] )
+    updateCheckboxInput( session, "isc_approved", value=sw_tmp$approved[ index() ])
+    
+  })
   
   output$imp_timeseries <- renderPlot({
     tmp %>% 
@@ -109,11 +133,8 @@ server <- function(input, output) {
   
   output$omt_overview <- renderDT({error})#, selection = "single"})
   
-  observeEvent(input$iss_comment, {
-     StrVal <- renderText(input$iss_comment)
-     output$qa <- StrVal#renderText(input$iss_comment)
-     #sw$comment[index()] <- renderText(input$iss_comment)
- })
+
+  
 }
 
 # Run the application 

@@ -1,4 +1,4 @@
-.libPaths("G:/Delivery/Shared/ACAD/JonesDC/_Support/RWD")
+#.libPaths("G:/Delivery/Shared/ACAD/JonesDC/_Support/RWD")
 
 library(tidyverse); theme_set(theme_bw())
 library(WWSP)
@@ -8,6 +8,11 @@ library(tidyr)
 data("hrt")
 load("./data/sw.RData")
 load("./data/results.RData")
+
+sw_tmp <- sw
+sw_tmp$approved <- FALSE
+#save(sw_tmp, file="./data/sw_tmp.RData")
+
 
 if(exists("results")) {tmp <- results}
 
