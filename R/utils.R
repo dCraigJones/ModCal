@@ -9,11 +9,6 @@ data("hrt")
 load("./data/sw.RData")
 load("./data/results.RData")
 
-sw_tmp <- sw
-sw_tmp$approved <- FALSE
-#save(sw_tmp, file="./data/sw_tmp.RData")
-
-
 if(exists("results")) {tmp <- results}
 
 # Load from model ---------------------------------------------------------

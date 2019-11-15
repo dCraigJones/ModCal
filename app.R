@@ -30,28 +30,24 @@ ui <- navbarPage("ModCal v0.1", id="main"
                  )   
                  
                  , tabPanel("Individual", value="tab_indiv"
-                            
-                            # Sidebar with a slider input for number of bins 
+                          
                             , sidebarLayout(
                               sidebarPanel(
                                   selectInput("iss_calibration_run", "Calibration Run: ", calibration_events)
                                 , hr()
-                                #, selectInput("iss_basin", "Selection Basin: ", c("All"))
                                 , selectizeInput("iss_pumpstation", "Pumpstation", sw$address[order(sw$address)])
                                 , hr()
-                                #, checkboxInput("isc_investigate", "Investigate", FALSE)
                                 , selectInput("iss_comment", "Comment: ", comment_options)
                                 , checkboxInput("isc_approved", "Approve", FALSE)
                                 , hr()
                                 , radioButtons("isr_view", "Filter", filter_options)
-                                #, textInput("ist_comment", "Comment")
-                                #, submitButton("Submit")
                                 , textOutput("qa")
                               ) # sidebarPanel
                               
                               , mainPanel(
+                                
                                 tabsetPanel(
-                                  tabPanel("Timeseries", plotOutput("imp_timeseries"))
+                                    tabPanel("Timeseries", plotOutput("imp_timeseries"))
                                   , tabPanel("Control", plotOutput("imp_control"))
                                   , tabPanel("Source", plotOutput("imp_source"))
                                 ) # tabsetPanel
@@ -61,6 +57,8 @@ ui <- navbarPage("ModCal v0.1", id="main"
                             ) # sidebarLayout
                             
                  ) # tabPanel - Individual
+                 
+                 , tabPanel("Review")
                  
                  , navbarMenu("Select Plant..."
                               , tabPanel("Buckman")
@@ -72,14 +70,17 @@ ui <- navbarPage("ModCal v0.1", id="main"
 
 server <- function(input, output, session) { 
   
+
+# Reactive Variables/Events -----------------------------------------------
+
   index <- reactive( match( input$iss_pumpstation, sw$address ) )
   
   approval <- reactive({ input$isc_approved })
   
   observeEvent( approval() , {
     
-    sw_tmp$approved[ index() ] <<- approval()
-    save(sw_tmp, file="./data/sw_tmp.RData")
+    sw$approved[ index() ] <<- approval()
+    save(sw, file="./data/sw.RData")
     
   })
   
@@ -87,15 +88,15 @@ server <- function(input, output, session) {
   
   observeEvent( comment(), {
     
-    sw_tmp$comment[ index() ] <<- comment()
-    save(sw_tmp, file="./data/sw_tmp.RData")
+    sw$comment[ index() ] <<- comment()
+    save(sw, file="./data/sw.RData")
     
   })
   
   observeEvent( index(), {
     
-    updateSelectInput( session, "iss_comment", selected=sw_tmp$comment[ index() ] )
-    updateCheckboxInput( session, "isc_approved", value=sw_tmp$approved[ index() ])
+    updateSelectInput( session, "iss_comment", selected=sw$comment[ index() ] )
+    updateCheckboxInput( session, "isc_approved", value=sw$approved[ index() ])
     
   })
   
@@ -111,6 +112,9 @@ server <- function(input, output, session) {
     
   })
   
+
+# Output Plots/Tables -----------------------------------------------------
+
   output$imp_timeseries <- renderPlot({
     tmp %>% 
       dplyr::filter(cmms==sw$cmms[index()]) %>%
