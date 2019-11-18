@@ -9,7 +9,7 @@ data("hrt")
 load("./data/sw.RData")
 load("./data/results.RData")
 
-if(exists("results")) {tmp <- results}
+#if(exists("results")) {tmp <- results}
 
 # Load from model ---------------------------------------------------------
 
@@ -60,14 +60,18 @@ load_icm <- function(filename) {
 }
 
 if(!exists("tmp")) {
+  use <- load_icm("./dev/model.csv")
+  
   tmp <- hrt %>% 
     dplyr::filter(lubridate::wday(datetime) %in% 2:6) %>%
     dplyr::mutate(hour=hour(datetime)) %>% 
     dplyr::group_by(cmms, hour) %>% 
-    dplyr::summarize(mu=mean(runtime), sig=sd(runtime), q1=quantile(runtime, probs=0.25), q3=quantile(runtime, probs=0.75)) %>%
+    dplyr::summarize(mu=mean(runtime), sig=sd(runtime), q1=quantile(runtime, probs=0.25), q2=quantile(runtime, probs=0.5), q3=quantile(runtime, probs=0.75)) %>%
     dplyr::inner_join(use, by=c("cmms", "hour")) %>%
     dplyr::mutate(z=(hrt-mu)/sig) %>%
     dplyr::group_by(cmms, hour)
+  
+  save(tmp, file="./data/results.RData")
 }
 
 pumpstation_names <- hrt %>%
@@ -83,7 +87,9 @@ if(!exists("sw")) {
     dplyr::inner_join(use, by="cmms") %>% 
     dplyr::select(cmms, address, tag) %>% 
     dplyr::distinct() %>%
-    dplyr::mutate(approved="-", comment="-")
+    dplyr::mutate(approved=FALSE, comment="-", action="")
+  
+  save(sw, file="./data/sw.RData")
 }
 
 
@@ -115,7 +121,7 @@ wastewater_plants <- c(
 
 error <- tmp %>% 
   dplyr::group_by(cmms) %>% 
-  dplyr::summarize(avg=mean(z), sd=sd(z)) %>% 
+  dplyr::summarize(avg=mean(z), sd=mean(abs(z))) %>% 
   dplyr::arrange(desc(avg))
 
 error <- hrt %>%
@@ -125,7 +131,7 @@ error <- hrt %>%
   dplyr::distinct() %>%
   dplyr::right_join(error, by="cmms")
 
-error$RT <- round(error$RT, 2)
+error$RT <- round(error$RT*24, 2)
 error$avg <- round(error$avg, 2)
 error$sd <- round(error$sd, 2)
 

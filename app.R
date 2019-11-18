@@ -5,6 +5,7 @@ library(shinythemes)
 library(DT)
 
 source("./R/utils.R")
+#source("./R/modules.R")
 
 ### GUI Naming Scheme
 #
@@ -24,6 +25,7 @@ source("./R/utils.R")
 
 ui <- navbarPage("ModCal v0.1", id="main"
                  , theme = shinytheme("cosmo")
+                 #, NS("test")
                  
                  , tabPanel("Overview", value="tab_overview"
                     , DTOutput("omt_overview")  
@@ -58,7 +60,11 @@ ui <- navbarPage("ModCal v0.1", id="main"
                             
                  ) # tabPanel - Individual
                  
-                 , tabPanel("Review")
+                 , tabPanel("Review",
+                      DTOutput("omt_review")
+                            
+                 ) # tabPanel - Review
+                 
                  
                  , navbarMenu("Select Plant..."
                               , tabPanel("Buckman")
@@ -75,13 +81,15 @@ server <- function(input, output, session) {
 
   index <- reactive( match( input$iss_pumpstation, sw$address ) )
   
-  approval <- reactive({ input$isc_approved })
   
+  #set_approved()
+  approval <- reactive({ input$isc_approved })
+
   observeEvent( approval() , {
-    
+
     sw$approved[ index() ] <<- approval()
     save(sw, file="./data/sw.RData")
-    
+
   })
   
   comment <- reactive({ input$iss_comment })
@@ -118,7 +126,7 @@ server <- function(input, output, session) {
   output$imp_timeseries <- renderPlot({
     tmp %>% 
       dplyr::filter(cmms==sw$cmms[index()]) %>%
-      ggplot(aes(x=hour, y=mu)) + 
+      ggplot(aes(x=hour, y=q2)) + 
       geom_line(col="grey50") + 
       geom_errorbar(aes(ymin=q1, ymax=q3), col="grey50") +
       geom_line(aes(y=hrt), lwd=1) +
@@ -148,7 +156,32 @@ server <- function(input, output, session) {
     
   }) # output$imp_source
   
-  output$omt_overview <- renderDT({ error })
+  output$omt_overview <- DT::renderDataTable(error, selection="single", rownames=FALSE)
+  
+  # output$omt_review <- renderDT(sw, selection="single", editable=TRUE)
+  
+  x = sw
+  
+  output$omt_review = renderDT(x, selection = 'none', editable = TRUE)
+  
+  proxy = dataTableProxy('omt_review')
+  
+  observeEvent(input$omt_review_cell_edit, {
+    info = input$omt_review_cell_edit
+    i = info$row
+    j = info$col
+    v = info$value
+    
+    isolate(
+      if (j == 7 ) {
+        
+        x[i, j] <<- v #DT::coerceValue(v, x[i, j])
+        sw <<- x
+        save(sw, file="./data/sw.RData")
+    })
+
+    replaceData(proxy, x, resetPaging = FALSE)  # important
+  })
   
 
   
