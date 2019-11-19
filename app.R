@@ -156,13 +156,20 @@ server <- function(input, output, session) {
     
   }) # output$imp_source
   
-  output$omt_overview <- DT::renderDataTable(error, selection="single", rownames=FALSE)
+  output$omt_overview <- DT::renderDataTable(error
+     , selection="single"
+     , rownames=FALSE
+  )
   
   # output$omt_review <- renderDT(sw, selection="single", editable=TRUE)
   
   x = sw
   
-  output$omt_review = renderDT(x, selection = 'none', editable = TRUE)
+  output$omt_review = renderDT(x
+     , selection = 'none'
+     , editable = TRUE
+     , rownames=FALSE
+  )
   
   proxy = dataTableProxy('omt_review')
   
