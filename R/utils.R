@@ -121,8 +121,8 @@ wastewater_plants <- c(
 
 error <- tmp %>% 
   dplyr::group_by(cmms) %>% 
-  dplyr::summarize(avg=mean(z), sd=mean(abs(z))) %>% 
-  dplyr::arrange(desc(avg))
+  dplyr::summarize(total=mean(z)
+     , temporal=mean(abs(z)))
 
 error <- hrt %>%
   dplyr::group_by(grid, cmms, address) %>%
@@ -132,8 +132,8 @@ error <- hrt %>%
   dplyr::right_join(error, by="cmms")
 
 error$RT <- round(error$RT*24, 2)
-error$avg <- round(error$avg, 2)
-error$sd <- round(error$sd, 2)
+error$total <- round(error$total, 2)
+error$temporal <- round(error$temporal, 2)
 
 
 # tmp %>%

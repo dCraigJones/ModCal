@@ -51,6 +51,7 @@ ui <- navbarPage("ModCal v0.1", id="main"
                                 tabsetPanel(
                                     tabPanel("Timeseries", plotOutput("imp_timeseries"))
                                   , tabPanel("Control", plotOutput("imp_control"))
+                                  , tabPanel("Dbl-Mass", plotOutput("imp_dblmass"))
                                   , tabPanel("Source", plotOutput("imp_source"))
                                 ) # tabsetPanel
                                 
@@ -127,25 +128,43 @@ server <- function(input, output, session) {
     tmp %>% 
       dplyr::filter(cmms==sw$cmms[index()]) %>%
       ggplot(aes(x=hour, y=q2)) + 
-      geom_line(col="grey50") + 
-      geom_errorbar(aes(ymin=q1, ymax=q3), col="grey50") +
-      geom_line(aes(y=hrt), lwd=1) +
-      geom_point(aes(y=hrt), size=3) 
+      geom_line(col="grey50", alpha=0.5, lwd=1) + 
+      geom_errorbar(aes(ymin=q1, ymax=q3), col="grey50", alpha=0.35, lwd=1) +
+      geom_line(aes(y=hrt), lwd=1, col="black") +
+      geom_point(aes(y=hrt), size=3, col="black", fill="white", pch=21) +
+      labs(x="hour of day", y="runtime (minutes/hour)")
   }) # output$imp_timeseries
   
   output$imp_control <- renderPlot({
     tmp %>% 
       dplyr::filter(cmms==sw$cmms[index()]) %>%
       ggplot(aes(x=hour, y=z)) +
-      geom_line(lwd=1) + 
-      geom_point(size=3) + 
+      geom_line(lwd=1, col="black") +
+      geom_point(size=3, col="black", fill="white", pch=21) +
       geom_hline(yintercept=c(0), col=rgb(0,0,1,0.5), lwd=1) +
-      #geom_hline(yintercept=-3:5, col=rgb(1,0,0,0.25), lwd=0.5) +
       geom_hline(yintercept=c(-1,1), col=rgb(1,0,0,0.25), lwd=0.5) +
       geom_hline(yintercept=c(-1.96,1.96), col=rgb(1,0,0,0.5), lwd=0.5) +
       geom_hline(yintercept=c(-2.54,2.54), col=rgb(1,0,0,1), lty=2) +
       ylab("z")
   }) # output$imp_control
+  
+  output$imp_dblmass <- renderPlot({
+    tmp %>% 
+      filter(cmms==sw$cmms[index()]) %>% 
+      ungroup() %>%
+      mutate(cm=cumsum(hrt)
+             , c1=cumsum(q1)
+             , c2=cumsum(q2)
+             , c3=cumsum(q3)
+      ) %>% 
+      ggplot(aes(x=cm, ymin=c1, ymax=c3)) +
+      geom_linerange(lwd=2) +
+      geom_point(aes(y=c2), pch=3, size=3) +
+      geom_abline(slope=1, lwd=1, col="grey75") +
+      xlab("model (cumulative runtime)") +
+      ylab("field (cumulative runtime)")
+    
+  })
   
   output$imp_source <- renderPlot({
     hrt %>% 
@@ -159,6 +178,7 @@ server <- function(input, output, session) {
   output$omt_overview <- DT::renderDataTable(error
      , selection="single"
      , rownames=FALSE
+     , filter="bottom"
   )
   
   # output$omt_review <- renderDT(sw, selection="single", editable=TRUE)
@@ -169,6 +189,7 @@ server <- function(input, output, session) {
      , selection = 'none'
      , editable = TRUE
      , rownames=FALSE
+     , filter="bottom"
   )
   
   proxy = dataTableProxy('omt_review')
