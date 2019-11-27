@@ -1,3 +1,5 @@
+use <- load_icm("./dev/model.csv")
+
 tbl_ts <- hrt %>%
   filter(wday(datetime) %in% 2:6) %>%
   mutate(hour=hour(datetime)) %>%
@@ -32,5 +34,12 @@ tbl_info <- tbl_ts %>%
     , mu_z=mean(z)
     , sd_z=sd(z)
     , beta=coef(lm(c1~cm))[2]
-    , NSE=max(cor(cm,c1),cor(cm,c3))^2
+    , SSR=sum(diff^2)
+    , SST=sum((hrt-mean(avg_runtime))^2)
+    , NSE=1-(SSR/SST)
   )
+
+
+error$RT <- round(error$RT*24, 2)
+error$total <- round(error$total, 2)
+error$temporal <- round(error$temporal, 2)

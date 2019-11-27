@@ -3,9 +3,34 @@
 library(shiny)
 library(shinythemes)
 library(DT)
+library(htmltools)
 
 source("./R/utils.R")
+source("./R/def.R")
 #source("./R/modules.R")
+
+sketch = htmltools::withTags(table(
+  class = 'display',
+  
+  thead(
+    tr(
+      th(rowspan = 2, 'CMMS'),
+      th(rowspan = 2, 'Address'),
+      th(colspan = 2, 'Time-Series'),
+      th(colspan = 2, 'Z-Score'),
+      th(colspan = 2, 'Double-Mass')
+    ),
+    
+    tr(
+      th('MPE'),
+      th('RMS'),
+      th('mean'),
+      th('stdev'),
+      th('beta'),
+      th('NSE')
+    )
+  )
+))
 
 ### GUI Naming Scheme
 #
@@ -179,6 +204,7 @@ server <- function(input, output, session) {
      , selection="single"
      , rownames=FALSE
      , filter="bottom"
+     , container=sketch
   )
   
   # output$omt_review <- renderDT(sw, selection="single", editable=TRUE)
