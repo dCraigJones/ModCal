@@ -6,9 +6,11 @@ comment_options <- c(
   , "New Development"
   , "Investigate - Pump"
   , "Investigate - Basin Flow"
+  , "Investigate - Excessive I&I"
   , "Investigate - As-Builts"
   , "Investigate - Valve Position"
   , "Field Verification Needed"
+  , "Approved - Low Flow"
 )
 
 filter_options <- c(
@@ -19,7 +21,39 @@ filter_options <- c(
 )
 
 wastewater_plants <- c(
-  "I - Buckman"
+    "I - Buckman"
   , "II - Cedar Bay"
   , "III - Southwest"
+  , "IV - Arlington-East"
+  , "IV - Monterey"
+  , "V - Mandarin"
+  , "VI - Blacks Ford"
+  , "VI - JCP"
+  , "VII - Nassau"
+  , "VIII - Ponte Vedra"
+  , "VIII - PDL"
 )
+
+sketch = htmltools::withTags(table(
+  class = 'display',
+  
+  thead(
+    tr(
+      th(rowspan = 2, 'CMMS'),
+      th(rowspan = 2, 'Address'),
+      th(rowspan = 2, 'SCADA\nRuntime'),
+      th(colspan = 2, 'Time-Series'),
+      th(colspan = 2, 'Z-Score'),
+      th(colspan = 2, 'Double-Mass')
+    ),
+    
+    tr(
+      th('MPE'),
+      th('RMS'),
+      th('mean'),
+      th('stdev'),
+      th('beta'),
+      th('NSE')
+    )
+  )
+))

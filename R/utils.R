@@ -6,10 +6,8 @@ library(lubridate)
 library(tidyr)
 
 data("hrt")
-load("./data/sw.RData")
-load("./data/results.RData")
-
-#if(exists("results")) {tmp <- results}
+try(load("./data/tbl_ts.RData"))
+try(load("./data/tbl_info.RData"))
 
 # Load from model ---------------------------------------------------------
 
@@ -26,12 +24,7 @@ load_icm <- function(filename) {
     dplyr::mutate(hour=as.numeric(time)) %>%
     dplyr::group_by(cmms, hour) %>%
     dplyr::summarize(hrt=sum(rt))
-  
-  # tidy %>% 
-  #   filter(cmms==unique(tidy$cmms)[1]) %>%
-  #   ggplot(aes(x=hour, y=hrt)) +
-  #   geom_line(lwd=1)
-  
+
   tmp <- tidy %>% 
     tidyr::spread("cmms", "hrt")
   
@@ -48,88 +41,62 @@ load_icm <- function(filename) {
   
   use <- clean_tmp %>% 
     tidyr::gather("cmms", "hrt", -hour)
-  
-  # use %>%
-  #   filter(cmms==unique(tidy$cmms)[9]) %>%
-  #   ggplot(aes(x=hour, y=hrt)) +
-  #   geom_line(lwd=1)
-  
+
   use$model_run <- mtime
   
   return(use)
 }
 
-if(!exists("tmp")) {
+if(!exists("tbl_ts")) {
   use <- load_icm("./dev/model.csv")
   
-  tmp <- hrt %>% 
-    dplyr::filter(lubridate::wday(datetime) %in% 2:6) %>%
-    dplyr::mutate(hour=hour(datetime)) %>% 
-    dplyr::group_by(cmms, hour) %>% 
-    dplyr::summarize(mu=mean(runtime), sig=sd(runtime), q1=quantile(runtime, probs=0.25), q2=quantile(runtime, probs=0.5), q3=quantile(runtime, probs=0.75)) %>%
-    dplyr::inner_join(use, by=c("cmms", "hour")) %>%
-    dplyr::mutate(z=(hrt-mu)/sig) %>%
-    dplyr::group_by(cmms, hour)
+  tbl_ts <- hrt %>%
+    filter(wday(datetime) %in% 2:6) %>%
+    mutate(hour=hour(datetime)) %>%
+    group_by(cmms, address, hour) %>%
+    summarize(
+      avg_runtime=mean(runtime)
+      , sd_runtime=sd(runtime)
+      , q1=quantile(runtime, probs=0.25)
+      , q2=quantile(runtime, probs=0.5)
+      , q3=quantile(runtime, probs=0.75)
+    ) %>%
+    inner_join(use, by=c("cmms", "hour")) %>%
+    mutate(
+      z=(hrt-avg_runtime)/sd_runtime
+      , diff=hrt-avg_runtime
+      , error=diff/avg_runtime
+    )
   
-  save(tmp, file="./data/results.RData")
+  save(tbl_ts, file="./data/ts.RData")
 }
 
-pumpstation_names <- hrt %>%
-  dplyr::group_by(grid, cmms, address, tag) %>%
-  dplyr::select(cmms, address,tag) %>%
-  dplyr::distinct()
-
-
-if(!exists("sw")) {
-  use <- load_icm("./dev/model.csv")
+if(!exists("tbl_info")) {
+  tbl_info <- tbl_ts %>%
+    ungroup() %>%
+    mutate(
+      cm=cumsum(hrt)
+      , c1=cumsum(q1)
+      , c2=cumsum(q2)
+      , c3=cumsum(q3)
+    ) %>% 
+    group_by(cmms, address) %>%
+    summarize(
+      RT=mean(avg_runtime)*24
+      , MPE=mean(error)
+      , RMS=sqrt(sum(error^2))
+      , mu_z=mean(z)
+      , sd_z=sd(z)
+      , beta=coef(lm(c1~cm))[2]
+      , SSR=sum(diff^2)
+      , SST=sum((hrt-mean(avg_runtime))^2)
+      , NSE=1-(SSR/SST)
+    ) %>%
+    dplyr::mutate(approved=FALSE, comment="-", action="") %>%
+    select(cmms, address, RT, MPE, RMS, mu_z, sd_z, beta, NSE, approved, comment, action)
   
-  sw <- pumpstation_names %>% 
-    dplyr::inner_join(use, by="cmms") %>% 
-    dplyr::select(cmms, address, tag) %>% 
-    dplyr::distinct() %>%
-    dplyr::mutate(approved=FALSE, comment="-", action="")
+  tbl_info$RT <- round(tbl_info$RT, 0)
+  tbl_info[,4:9] <- round(tbl_info[,4:9],2)
   
-  save(sw, file="./data/sw.RData")
+  save(tbl_info, file="./data/info.RData")
 }
-
-
-error <- tmp %>% 
-  dplyr::group_by(cmms) %>% 
-  dplyr::summarize(total=mean(z)
-     , temporal=mean(abs(z)))
-
-error <- hrt %>%
-  dplyr::group_by(grid, cmms, address) %>%
-  dplyr::summarize(RT=mean(runtime)) %>%
-  dplyr::select(cmms, address, RT) %>%
-  dplyr::distinct() %>%
-  dplyr::right_join(error, by="cmms")
-
-error$RT <- round(error$RT*24, 2)
-error$total <- round(error$total, 2)
-error$temporal <- round(error$temporal, 2)
-
-
-# tmp %>%
-#   dplyr::group_by(cmms, hour) %>%
-#   dplyr::summarize(
-#     e = (mu - hrt),
-#     se = e ^ 2,
-#     mu = mu,
-#     avg = mean(mu),
-#     btm = (mu - avg)
-#   ) %>%
-#   dplyr::group_by(cmms) %>%
-#   dplyr::summarize(mse = mean(se),
-#                    sd = sum(btm),
-#                    nse = (1 - mse / (sd ^ 2)))
-# 
-# tmp %>%
-#   filter(cmms == "LS-004034") %>%
-#   ggplot(aes(x = hrt, ymin = q1, ymax = q3)) +
-#   geom_linerange() +
-#   ylim(c(0, 60)) +
-#   xlim(c(0, 60)) +
-#   geom_abline(slope = 1)
-
-                   

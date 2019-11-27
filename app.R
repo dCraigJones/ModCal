@@ -9,49 +9,9 @@ source("./R/utils.R")
 source("./R/def.R")
 #source("./R/modules.R")
 
-sketch = htmltools::withTags(table(
-  class = 'display',
-  
-  thead(
-    tr(
-      th(rowspan = 2, 'CMMS'),
-      th(rowspan = 2, 'Address'),
-      th(colspan = 2, 'Time-Series'),
-      th(colspan = 2, 'Z-Score'),
-      th(colspan = 2, 'Double-Mass')
-    ),
-    
-    tr(
-      th('MPE'),
-      th('RMS'),
-      th('mean'),
-      th('stdev'),
-      th('beta'),
-      th('NSE')
-    )
-  )
-))
-
-### GUI Naming Scheme
-#
-# i.. = Indivdual
-# o.. = Overview
-# c.. = Comments?
-#
-# .s. = Sidebar
-# .m. = Main
-#
-# ..s = SelectInput
-# ..c = Checkbox
-# ..r = radio buttons
-# ..t = text input
-# ..b = button
-# ..p = plot
-
 ui <- navbarPage("ModCal v0.1", id="main"
                  , theme = shinytheme("cosmo")
-                 #, NS("test")
-                 
+
                  , tabPanel("Overview", value="tab_overview"
                     , DTOutput("omt_overview")  
                  )   
@@ -62,12 +22,12 @@ ui <- navbarPage("ModCal v0.1", id="main"
                               sidebarPanel(
                                   selectInput("iss_calibration_run", "Calibration Run: ", calibration_events)
                                 , hr()
-                                , selectizeInput("iss_pumpstation", "Pumpstation", sw$address[order(sw$address)])
+                                , selectizeInput("iss_pumpstation", "Pumpstation", tbl_info$address[order(tbl_info$address)])
                                 , hr()
                                 , selectInput("iss_comment", "Comment: ", comment_options)
                                 , checkboxInput("isc_approved", "Approve", FALSE)
+                                , textInput("ist_action", "Action:")
                                 , hr()
-                                , radioButtons("isr_view", "Filter", filter_options)
                                 , textOutput("qa")
                               ) # sidebarPanel
                               
@@ -91,12 +51,13 @@ ui <- navbarPage("ModCal v0.1", id="main"
                             
                  ) # tabPanel - Review
                  
-                 
-                 , navbarMenu("Select Plant..."
-                              , tabPanel("Buckman")
-                              , tabPanel("Cedar Bay")
-                 ) # navbarMenu
-                 
+                 , navbarMenu("File..."
+                              , tabPanel("New")
+                              , tabPanel("Open")
+                              , tabPanel("Export")
+                 )
+               
+
 ) # navbarPage
 
 
@@ -105,7 +66,7 @@ server <- function(input, output, session) {
 
 # Reactive Variables/Events -----------------------------------------------
 
-  index <- reactive( match( input$iss_pumpstation, sw$address ) )
+  index <- reactive( match( input$iss_pumpstation, tbl_info$address ) )
   
   
   #set_approved()
@@ -113,8 +74,8 @@ server <- function(input, output, session) {
 
   observeEvent( approval() , {
 
-    sw$approved[ index() ] <<- approval()
-    save(sw, file="./data/sw.RData")
+    tbl_info$approved[ index() ] <<- approval()
+    save(tbl_info, file="./data/info.RData")
 
   })
   
@@ -122,17 +83,31 @@ server <- function(input, output, session) {
   
   observeEvent( comment(), {
     
-    sw$comment[ index() ] <<- comment()
-    save(sw, file="./data/sw.RData")
+    tbl_info$comment[ index() ] <<- comment()
+    save(tbl_info, file="./data/info.RData")
     
   })
   
-  observeEvent( index(), {
+  action <- reactive({input$ist_action})
+  
+  observeEvent( action(), {
     
-    updateSelectInput( session, "iss_comment", selected=sw$comment[ index() ] )
-    updateCheckboxInput( session, "isc_approved", value=sw$approved[ index() ])
+    tbl_info$action[ index() ] <<- action()
+    save(tbl_info, file="./data/info.RData")
     
   })
+  
+  
+  
+  observeEvent( index(), {
+    
+    updateSelectInput( session, "iss_comment", selected=tbl_info$comment[ index() ] )
+    updateCheckboxInput( session, "isc_approved", value=tbl_info$approved[ index() ])
+    updateTextInput( session, "ist_action", value=tbl_info$action[ index() ])
+    
+  })
+  
+  
   
   selected <- reactive({ input$omt_overview_rows_selected })
   
@@ -142,7 +117,7 @@ server <- function(input, output, session) {
     rowValLast <- rowVal[length(rowVal)]
     
     updateTabsetPanel( session, "main", "tab_indiv" )
-    updateSelectizeInput( session, "iss_pumpstation", selected=error$address[ rowValLast ] )
+    updateSelectizeInput( session, "iss_pumpstation", selected=tbl_info$address[ rowValLast ] )
     
   })
   
@@ -150,8 +125,8 @@ server <- function(input, output, session) {
 # Output Plots/Tables -----------------------------------------------------
 
   output$imp_timeseries <- renderPlot({
-    tmp %>% 
-      dplyr::filter(cmms==sw$cmms[index()]) %>%
+    tbl_ts %>% 
+      dplyr::filter(cmms==tbl_info$cmms[index()]) %>%
       ggplot(aes(x=hour, y=q2)) + 
       geom_line(col="grey50", alpha=0.5, lwd=1) + 
       geom_errorbar(aes(ymin=q1, ymax=q3), col="grey50", alpha=0.35, lwd=1) +
@@ -161,8 +136,8 @@ server <- function(input, output, session) {
   }) # output$imp_timeseries
   
   output$imp_control <- renderPlot({
-    tmp %>% 
-      dplyr::filter(cmms==sw$cmms[index()]) %>%
+    tbl_ts %>% 
+      dplyr::filter(cmms==tbl_info$cmms[index()]) %>%
       ggplot(aes(x=hour, y=z)) +
       geom_line(lwd=1, col="black") +
       geom_point(size=3, col="black", fill="white", pch=21) +
@@ -174,8 +149,8 @@ server <- function(input, output, session) {
   }) # output$imp_control
   
   output$imp_dblmass <- renderPlot({
-    tmp %>% 
-      filter(cmms==sw$cmms[index()]) %>% 
+    tbl_ts %>% 
+      filter(cmms==tbl_info$cmms[index()]) %>% 
       ungroup() %>%
       mutate(cm=cumsum(hrt)
              , c1=cumsum(q1)
@@ -193,25 +168,25 @@ server <- function(input, output, session) {
   
   output$imp_source <- renderPlot({
     hrt %>% 
-      dplyr::filter(cmms==sw$cmms[index()]) %>% 
+      dplyr::filter(cmms==tbl_info$cmms[index()]) %>% 
       ggplot(aes(x=datetime, y=runtime)) + 
       geom_line()
     
     
   }) # output$imp_source
   
-  output$omt_overview <- DT::renderDataTable(error
+  output$omt_overview <- DT::renderDataTable(tbl_info[,1:9]
      , selection="single"
      , rownames=FALSE
      , filter="bottom"
      , container=sketch
   )
   
-  # output$omt_review <- renderDT(sw, selection="single", editable=TRUE)
+  #x = tbl_info %>% select(cmms, address, approved, comment, action)
   
-  x = sw
-  
-  output$omt_review = renderDT(x
+  output$omt_review = renderDT(
+       tbl_info %>% 
+         select(cmms, address, approved, comment, action)
      , selection = 'none'
      , editable = TRUE
      , rownames=FALSE
@@ -221,6 +196,8 @@ server <- function(input, output, session) {
   proxy = dataTableProxy('omt_review')
   
   observeEvent(input$omt_review_cell_edit, {
+    x = tbl_info #%>% select(cmms, address, approved, comment, action)
+    
     info = input$omt_review_cell_edit
     i = info$row
     j = info$col
@@ -230,8 +207,8 @@ server <- function(input, output, session) {
       if (j == 7 ) {
         
         x[i, j] <<- v #DT::coerceValue(v, x[i, j])
-        sw <<- x
-        save(sw, file="./data/sw.RData")
+        tbl_info <<- x
+        save(tbl_info, file="./data/info.RData")
     })
 
     replaceData(proxy, x, resetPaging = FALSE)  # important
@@ -244,3 +221,21 @@ server <- function(input, output, session) {
 # Run the application 
 shinyApp(ui = ui, server = server)
 
+
+# README - Naming Documentation -------------------------------------------
+
+### GUI Naming Scheme
+#
+# i.. = Indivdual
+# o.. = Overview
+# c.. = Comments?
+#
+# .s. = Sidebar
+# .m. = Main
+#
+# ..s = SelectInput
+# ..c = Checkbox
+# ..r = radio buttons
+# ..t = text input
+# ..b = button
+# ..p = plot
