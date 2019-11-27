@@ -6,8 +6,8 @@ library(lubridate)
 library(tidyr)
 
 data("hrt")
-try(load("./data/tbl_ts.RData"))
-try(load("./data/tbl_info.RData"))
+try(load("./data/ts.RData"))
+try(load("./data/info.RData"))
 
 # Load from model ---------------------------------------------------------
 

@@ -40,6 +40,8 @@ ui <- navbarPage("ModCal v0.1", id="main"
                                   , tabPanel("Source", plotOutput("imp_source"))
                                 ) # tabsetPanel
                                 
+                                , DTOutput("imp_summary")
+                                
                               ) # mainPanel
                               
                             ) # sidebarLayout
@@ -174,6 +176,16 @@ server <- function(input, output, session) {
     
     
   }) # output$imp_source
+  
+  output$imp_summary <- DT::renderDT(tbl_info %>% 
+     dplyr::filter(cmms==tbl_info$cmms[index()]) %>%
+     ungroup() %>%   
+     select(RT, MPE, RMS, mu_z, sd_z, beta, NSE)
+     , selection="none"
+     , rownames=FALSE
+     , options=list(dom='t')
+     , container=summary_sketch
+  )
   
   output$omt_overview <- DT::renderDataTable(tbl_info[,1:9]
      , selection="single"
