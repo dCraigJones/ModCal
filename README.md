@@ -1,5 +1,5 @@
 ---
-bibliography: /fig/ref.bib
+bibliography: ref.bib
 ---
 
 # ModCal (Model Calibration)
