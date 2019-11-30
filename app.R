@@ -147,7 +147,8 @@ server <- function(input, output, session) {
       geom_hline(yintercept=c(-1,1), col=rgb(1,0,0,0.25), lwd=0.5) +
       geom_hline(yintercept=c(-1.96,1.96), col=rgb(1,0,0,0.5), lwd=0.5) +
       geom_hline(yintercept=c(-2.54,2.54), col=rgb(1,0,0,1), lty=2) +
-      ylab("z")
+      xlab("hour of day") +
+      ylab("z-score")
   }) # output$imp_control
   
   output$imp_dblmass <- renderPlot({
@@ -160,12 +161,13 @@ server <- function(input, output, session) {
              , c3=cumsum(q3)
       ) %>% 
       ggplot(aes(x=cm, ymin=c1, ymax=c3)) +
-      geom_linerange(lwd=2) +
-      geom_point(aes(y=c2), pch=3, size=3) +
-      geom_abline(slope=1, lwd=1, col="grey75") +
+      geom_linerange(lwd=2, col="grey50") +
+      geom_point(aes(y=c2), pch=21, size=3, fill="white") +
+      geom_abline(slope=1, lwd=1, col="grey25") +
+      geom_smooth(aes(x=cm, y=c2), method=lm, fill=NA, lwd=0.75, lty=2) + 
       xlab("model (cumulative runtime)") +
-      ylab("field (cumulative runtime)")
-    
+      ylab("field (cumulative runtime)") +
+      xlim(0,NA) + ylim(0,NA)
   })
   
   output$imp_source <- renderPlot({
@@ -180,14 +182,14 @@ server <- function(input, output, session) {
   output$imp_summary <- DT::renderDT(tbl_info %>% 
      dplyr::filter(cmms==tbl_info$cmms[index()]) %>%
      ungroup() %>%   
-     select(RT, MPE, RMS, mu_z, sd_z, beta, NSE)
+     select(RT, MPE, NSE, mu_z, sd_z, beta, RMS)
      , selection="none"
      , rownames=FALSE
      , options=list(dom='t')
      , container=summary_sketch
   )
   
-  output$omt_overview <- DT::renderDataTable(tbl_info[,1:9]
+  output$omt_overview <- DT::renderDataTable(tbl_info[,c(1:4,9,6:8,5)]
      , selection="single"
      , rownames=FALSE
      , filter="bottom"

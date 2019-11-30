@@ -50,11 +50,11 @@ sketch = htmltools::withTags(table(
     
     tr(
       th('MPE'),
-      th('RMS'),
+      th('NSE'),
       th('mean'),
       th('stdev'),
       th('beta'),
-      th('NSE')
+      th('RMSE')
     )
   )
 ))
@@ -74,11 +74,11 @@ summary_sketch = htmltools::withTags(table(
     
     tr(
       th('MPE'),
-      th('RMS'),
+      th('NSE'),
       th('mean'),
       th('stdev'),
       th('beta'),
-      th('NSE')
+      th('RMSE')
     )
   )
 ))
