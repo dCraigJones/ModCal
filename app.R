@@ -54,9 +54,29 @@ ui <- navbarPage("ModCal v0.1", id="main"
                  ) # tabPanel - Review
                  
                  , navbarMenu("File..."
-                              , tabPanel("New")
-                              , tabPanel("Open")
-                              , tabPanel("Export")
+                              , tabPanel("New", 
+                                  fileInput("new_file", "Select Simulation Result File...",
+                                            accept = c(
+                                              "text/csv",
+                                              "text/comma-separated-values,text/plain",
+                                              ".csv")
+                                  )
+                                  , textInput("new_date", "Enter Simulation Date/Time", as.character(format(Sys.time(), "%F %I:%M %p")))
+                                  , selectInput("new_basin", "Select Wastewater Plant Basin", wastewater_plants)
+                              ) #Tab Panel - NEW
+                              , tabPanel("Open",
+                                 fileInput("open_file", "Open ModCal File...",
+                                           accept = c(
+                                             ".hrt")
+                                 )
+                                         
+                              ) #Tab Panel - OPEN
+                              , tabPanel("Export" , 
+                                   textInput("export_filename", "Enter Proposed Filename...")
+                                   , actionButton("export_ok", "Export")
+                                   , hr()
+                                   , span("file will by saved in the xyz folder")
+                              ) #Tab Panel - EXPORT
                  )
                
 
@@ -65,7 +85,10 @@ ui <- navbarPage("ModCal v0.1", id="main"
 
 server <- function(input, output, session) { 
   
-
+filename <- reactive ({ input$export })
+  
+output$export_qa <- renderText(filename()$datapath)
+  
 # Reactive Variables/Events -----------------------------------------------
 
   index <- reactive( match( input$iss_pumpstation, tbl_info$address ) )
