@@ -2,6 +2,7 @@
 
 library(shiny)
 library(shinythemes)
+#library(shinyFiles)
 library(DT)
 library(htmltools)
 
@@ -9,7 +10,7 @@ source("./R/utils.R")
 source("./R/def.R")
 #source("./R/modules.R")
 
-ui <- navbarPage("ModCal v0.1", id="main"
+ui <- navbarPage(paste("ModCal v0.1 (", file_info$plant_basin, ")"), id="main"
                  , theme = shinytheme("cosmo")
 
                  , tabPanel("Overview", value="tab_overview"
@@ -20,14 +21,17 @@ ui <- navbarPage("ModCal v0.1", id="main"
                           
                             , sidebarLayout(
                               sidebarPanel(
-                                  selectInput("iss_calibration_run", "Calibration Run: ", calibration_events)
-                                , hr()
-                                , selectizeInput("iss_pumpstation", "Pumpstation", tbl_info$address[order(tbl_info$address)])
+                                  #selectInput("iss_calibration_run", "Calibration Run: ", calibration_events)
+#                                , br()
+                                  #HTML(paste("<H2>", file_info$plant_basin, "</H2>"))
+                                #, hr()
+                                  selectizeInput("iss_pumpstation", "Pumpstation", tbl_info$address[order(tbl_info$address)])
                                 , hr()
                                 , selectInput("iss_comment", "Comment: ", comment_options)
                                 , checkboxInput("isc_approved", "Approve", FALSE)
                                 , textInput("ist_action", "Action:")
                                 , hr()
+                                , HTML(paste("<i>Simulation Date:", file_info$date_created, "</i>"))
                                 , textOutput("qa")
                               ) # sidebarPanel
                               
@@ -71,6 +75,14 @@ ui <- navbarPage("ModCal v0.1", id="main"
                                  )
                                          
                               ) #Tab Panel - OPEN
+                              
+                              , tabPanel("Save", 
+                                      textInput("export_filename", "Enter Proposed Filename...")
+                                    , actionButton("export_ok", "Export")
+                                    , hr()
+                                    , span("file will by saved in the xyz folder")
+                              )
+                              
                               , tabPanel("Export" , 
                                    textInput("export_filename", "Enter Proposed Filename...")
                                    , actionButton("export_ok", "Export")

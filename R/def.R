@@ -21,6 +21,8 @@ filter_options <- c(
   , "Investigate"
 )
 
+file_info <- data.frame(date_created = "2019-11-12 4:40 PM", plant_basin="III - Southwest")
+
 wastewater_plants <- c(
     "I - Buckman"
   , "II - Cedar Bay"
