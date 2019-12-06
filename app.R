@@ -26,6 +26,7 @@ ui <- navbarPage(paste("ModCal v0.1 (", file_info$plant_basin, ")"), id="main"
                                   #HTML(paste("<H2>", file_info$plant_basin, "</H2>"))
                                 #, hr()
                                   selectizeInput("iss_pumpstation", "Pumpstation", tbl_info$address[order(tbl_info$address)])
+                                , actionButton("iss_action", "Copy to Clipboard")
                                 , hr()
                                 , selectInput("iss_comment", "Comment: ", comment_options)
                                 , checkboxInput("isc_approved", "Approve", FALSE)
@@ -105,7 +106,8 @@ output$export_qa <- renderText(filename()$datapath)
 
   index <- reactive( match( input$iss_pumpstation, tbl_info$address ) )
   
-  
+  observeEvent( input$iss_action ,  writeClipboard(tbl_info$address[index()]))
+
   #set_approved()
   approval <- reactive({ input$isc_approved })
 
