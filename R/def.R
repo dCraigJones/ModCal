@@ -37,6 +37,25 @@ wastewater_plants <- c(
   , "VIII - PDL"
 )
 
+wastewater_abv <- c(
+    "BM"
+  , "D2"
+  , "SW"
+  , "AE"
+  , "MO"
+  , "MN"
+  , "BF"
+  , "JCP"
+  , "NC"
+  , "PV"
+  , "PDL"
+)
+
+suggested_filename <- paste(
+  wastewater_abv[match(file_info$plant_basin, wastewater_plants)]
+  , format(ymd_hm(file_info$date_created), format="%F")
+  , sep="_")
+
 sketch = htmltools::withTags(table(
   class = 'display',
   

@@ -68,6 +68,8 @@ ui <- navbarPage(paste("ModCal v0.1 (", file_info$plant_basin, ")"), id="main"
                                   )
                                   , textInput("new_date", "Enter Simulation Date/Time", as.character(format(Sys.time(), "%F %I:%M %p")))
                                   , selectInput("new_basin", "Select Wastewater Plant Basin", wastewater_plants)
+                                  , actionButton("new_ok", "GO!")
+                                  , textOutput("new_msg")
                               ) #Tab Panel - NEW
                               , tabPanel("Open",
                                  fileInput("open_file", "Open ModCal File...",
@@ -78,10 +80,11 @@ ui <- navbarPage(paste("ModCal v0.1 (", file_info$plant_basin, ")"), id="main"
                               ) #Tab Panel - OPEN
                               
                               , tabPanel("Save", 
-                                      textInput("export_filename", "Enter Proposed Filename...")
-                                    , actionButton("export_ok", "Export")
+                                      textInput("save_filename", "Enter Proposed Filename...", suggested_filename)
+                                    , actionButton("save_ok", "Save")
                                     , hr()
-                                    , span("file will by saved in the xyz folder")
+                                    , span("file will by saved in the \"save\" folder of the project directory")
+                                    , textOutput("save_msg")
                               )
                               
                               , tabPanel("Export" , 
@@ -89,6 +92,7 @@ ui <- navbarPage(paste("ModCal v0.1 (", file_info$plant_basin, ")"), id="main"
                                    , actionButton("export_ok", "Export")
                                    , hr()
                                    , span("file will by saved in the xyz folder")
+                                   
                               ) #Tab Panel - EXPORT
                  )
                
@@ -263,6 +267,48 @@ output$export_qa <- renderText(filename()$datapath)
     })
 
     replaceData(proxy, x, resetPaging = FALSE)  # important
+  })
+
+  observeEvent( input$new_ok, {
+    inFile <- input$new_file
+
+    if(is.null(inFile))
+       {output$new_msg <- renderText( "Select model output csv file!" )}
+    else {
+        load_new_file(inFile$datapath)
+
+        file_info <- data.frame(date_created=input$new_date, plant_basin=input$new_basin)
+
+        save(file_info, file="./data/file_info.RData")
+
+        updateTabsetPanel( session, "main", "tab_overview" )
+    }
+  })
+  
+  observeEvent( input$open_file, {
+    inFile <- input$open_file
+
+        tbl_ts <- NULL
+        tbl_info <- NULL
+        file_info <-NULL
+    
+        load(inFile$datapath)
+        
+        save(tbl_ts, file="./data/ts.RData")
+        save(tbl_info, file="./data/info.RData")
+        save(file_info, file="./data/file_info.RData")
+        
+        updateTabsetPanel( session, "main", "tab_overview" )
+    
+  })
+  
+  
+  observeEvent( input$save_ok, {
+    save(tbl_ts, tbl_info, file_info, 
+         file=paste0("./save/", input$save_filename, ".hrt")
+         )
+    
+    output$save_msg <- renderText( paste0("ModCal files saved to ../save/", input$save_filename, ".hrt") )
   })
   
 
