@@ -5,7 +5,7 @@ library(WWSP)
 library(lubridate)
 library(tidyr)
 
-data("hrt")
+
 try(load("./data/ts.RData"))
 try(load("./data/info.RData"))
 try(load("./data/file_info.RData"))
@@ -13,6 +13,7 @@ try(load("./data/file_info.RData"))
 # Load from model ---------------------------------------------------------
 
 load_new_file <- function(filename) {
+  data("hrt")
   
   use <- load_icm(filename)
   
@@ -63,6 +64,9 @@ load_new_file <- function(filename) {
   tbl_info[,4:9] <- round(tbl_info[,4:9],2)
   
   save(tbl_info, file="./data/info.RData")
+  
+  tbl_info <<- tbl_info
+  tbl_ts <<- tbl_ts
 }
 
 load_icm <- function(filename) {

@@ -277,7 +277,7 @@ output$export_qa <- renderText(filename()$datapath)
     else {
         load_new_file(inFile$datapath)
 
-        file_info <- data.frame(date_created=input$new_date, plant_basin=input$new_basin)
+        file_info <<- data.frame(date_created=input$new_date, plant_basin=input$new_basin)
 
         save(file_info, file="./data/file_info.RData")
 
@@ -288,11 +288,7 @@ output$export_qa <- renderText(filename()$datapath)
   observeEvent( input$open_file, {
     inFile <- input$open_file
 
-        tbl_ts <- NULL
-        tbl_info <- NULL
-        file_info <-NULL
-    
-        load(inFile$datapath)
+        load(inFile$datapath, envir=.GlobalEnv)
         
         save(tbl_ts, file="./data/ts.RData")
         save(tbl_info, file="./data/info.RData")
