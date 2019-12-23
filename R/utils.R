@@ -1,7 +1,7 @@
 #.libPaths("G:/Delivery/Shared/ACAD/JonesDC/_Support/RWD")
 
 library(tidyverse); theme_set(theme_bw())
-library(WWSP)
+#library(WWSP)
 library(lubridate)
 library(tidyr)
 
@@ -9,11 +9,12 @@ library(tidyr)
 try(load("./data/ts.RData"))
 try(load("./data/info.RData"))
 try(load("./data/file_info.RData"))
+data("hrt")
 
 # Load from model ---------------------------------------------------------
 
 load_new_file <- function(filename) {
-  data("hrt")
+  #data("hrt")
   
   use <- load_icm(filename)
   

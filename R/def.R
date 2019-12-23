@@ -87,6 +87,7 @@ summary_sketch = htmltools::withTags(table(
   
   thead(
     tr(
+      th(rowspan = 2, 'CMMS'),
       th(rowspan = 2, 'SCADA\nRuntime'),
       th(colspan = 2, 'Time-Series'),
       th(colspan = 2, 'Z-Score'),

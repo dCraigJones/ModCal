@@ -147,6 +147,8 @@ output$export_qa <- renderText(filename()$datapath)
     updateSelectInput( session, "iss_comment", selected=tbl_info$comment[ index() ] )
     updateCheckboxInput( session, "isc_approved", value=tbl_info$approved[ index() ])
     updateTextInput( session, "ist_action", value=tbl_info$action[ index() ])
+    #output$qa <- renderText( paste0(hrt %>% filter(cmms==tbl_info$cmms[ index() ]) %>% ungroup() %>% distinct(address)) )
+    
     
   })
   
@@ -223,7 +225,7 @@ output$export_qa <- renderText(filename()$datapath)
   output$imp_summary <- DT::renderDT(tbl_info %>% 
      dplyr::filter(cmms==tbl_info$cmms[index()]) %>%
      ungroup() %>%   
-     select(RT, MPE, NSE, mu_z, sd_z, beta, RMS)
+     select(cmms, RT, MPE, NSE, mu_z, sd_z, beta, RMS)
      , selection="none"
      , rownames=FALSE
      , options=list(dom='t')
